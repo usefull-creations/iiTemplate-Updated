@@ -3,19 +3,16 @@ using static StupidTemplate.Menu.Main;
 
 namespace StupidTemplate.Classes
 {
-    public class Button : MonoBehaviour
+    public class SearchKeyButton : MonoBehaviour
     {
+        private static float buttonCooldown;
 
-        public static float      buttonCooldown;
-        public        bool       incremental;
-        public        bool       positive;
-        public        ButtonInfo relatedButton;
+        public string value;
 
         public void OnTriggerEnter(Collider collider)
         {
-            if (Time.time     <= buttonCooldown ||
-                menu          == null           ||
-                relatedButton == null)
+            if (!IsSearching ||
+                Time.time <= buttonCooldown)
                 return;
 
             if (!TryGetReferenceHand(
@@ -25,7 +22,7 @@ namespace StupidTemplate.Classes
 
             buttonCooldown =
                     Time.time +
-                    0.2f;
+                    0.12f;
 
             GorillaTagger.Instance.StartVibration(
                     pressingRightHand,
@@ -37,14 +34,7 @@ namespace StupidTemplate.Classes
                     pressingRightHand,
                     0.4f);
 
-            bool? incrementDirection =
-                    incremental
-                            ? positive
-                            : (bool?)null;
-
-            Toggle(
-                    relatedButton,
-                    incrementDirection);
+            HandleSearchKey(value);
         }
     }
 }

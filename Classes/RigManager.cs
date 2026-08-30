@@ -1,92 +1,64 @@
-﻿using HarmonyLib;
+﻿using System.Linq;
+using HarmonyLib;
 using Photon.Pun;
 using Photon.Realtime;
 using UnityEngine;
 
 namespace StupidTemplate.Classes
 {
-    public class RigManager
+    public abstract class RigManager
     {
         public static VRRig GetVRRigFromPlayer(Player p) =>
-            GorillaGameManager.instance.FindPlayerVRRig(p);
+                GorillaGameManager.instance.FindPlayerVRRig(p);
 
         public static VRRig GetRandomVRRig(bool includeSelf)
         {
-            VRRig random = GorillaParent.instance.vrrigs[Random.Range(0, GorillaParent.instance.vrrigs.Count - 1)];
-            if (includeSelf)
-                return random;
-            else
+            while (true)
             {
-                if (random != VRRig.LocalRig)
+                VRRig random = VRRigCache.m_activeRigs[Random.Range(0, VRRigCache.m_activeRigs.Count - 1)];
+
+                if (includeSelf || random != VRRig.LocalRig)
                     return random;
-                else
-                    return GetRandomVRRig(includeSelf);
+
             }
         }
 
         public static VRRig GetClosestVRRig()
         {
-            float num = float.MaxValue;
+            float num    = float.MaxValue;
             VRRig outRig = null;
-            foreach (VRRig vrrig in GorillaParent.instance.vrrigs)
+            foreach (VRRig vrrig in VRRigCache.m_activeRigs.Where(vrrig => Vector3.Distance(GorillaTagger.Instance.bodyCollider.transform.position, vrrig.transform.position) < num))
             {
-                if (Vector3.Distance(GorillaTagger.Instance.bodyCollider.transform.position, vrrig.transform.position) < num)
-                {
-                    num = Vector3.Distance(GorillaTagger.Instance.bodyCollider.transform.position, vrrig.transform.position);
-                    outRig = vrrig;
-                }
+                num    = Vector3.Distance(GorillaTagger.Instance.bodyCollider.transform.position, vrrig.transform.position);
+                outRig = vrrig;
             }
+
             return outRig;
         }
 
         public static PhotonView GetPhotonViewFromVRRig(VRRig p) =>
-            (PhotonView)Traverse.Create(p).Field("photonView").GetValue();
+                (PhotonView)Traverse.Create(p).Field("photonView").GetValue();
 
-        public static Player GetRandomPlayer(bool includeSelf)
-        {
-            if (includeSelf)
-                return PhotonNetwork.PlayerList[Random.Range(0, PhotonNetwork.PlayerList.Length - 1)];
-            else
-                return PhotonNetwork.PlayerListOthers[Random.Range(0, PhotonNetwork.PlayerListOthers.Length - 1)];
-        }
+        public static Player GetRandomPlayer(bool includeSelf) => includeSelf ? PhotonNetwork.PlayerList[Random.Range(0, PhotonNetwork.PlayerList.Length - 1)] : PhotonNetwork.PlayerListOthers[Random.Range(0, PhotonNetwork.PlayerListOthers.Length - 1)];
 
         public static Player GetPlayerFromVRRig(VRRig p) =>
-            GetPhotonViewFromVRRig(p).Owner;
+                GetPhotonViewFromVRRig(p).Owner;
 
-        public static Player GetPlayerFromID(string id)
-        {
-            Player found = null;
-            foreach (Player target in PhotonNetwork.PlayerList)
-            {
-                if (target.UserId == id)
-                {
-                    found = target;
-                    break;
-                }
-            }
-            return found;
-        }
+        public static Player GetPlayerFromID(string id) => PhotonNetwork.PlayerList.FirstOrDefault(target => target.UserId == id);
 
         public static Color GetPlayerColor(VRRig Player)
         {
             if (Player.bodyRenderer.cosmeticBodyType == GorillaBodyType.Skeleton)
                 return Color.green;
 
-            switch (Player.setMatIndex)
-            {
-                case 1:
-                    return Color.red;
-                case 2:
-                case 11:
-                    return new Color32(255, 128, 0, 255);
-                case 3:
-                case 7:
-                    return Color.blue;
-                case 12:
-                    return Color.green;
-                default:
-                    return Player.playerColor;
-            }
+            return Player.setMatIndex switch
+                   {
+                           1       => Color.red,
+                           2 or 11 => new Color32(255, 128, 0, 255),
+                           3 or 7  => Color.blue,
+                           12      => Color.green,
+                           var _   => Player.playerColor,
+                   };
         }
     }
 }
