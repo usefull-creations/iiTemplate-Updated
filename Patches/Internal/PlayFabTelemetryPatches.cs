@@ -8,7 +8,7 @@ using Random = UnityEngine.Random;
 
 namespace StupidTemplate.Patches.Internal
 {
-    public class PlayFabTelemetryPatches
+    public abstract class PlayFabTelemetryPatches
     {
         [HarmonyPatch(typeof(PlayFabDeviceUtil), "SendDeviceInfoToPlayFab")]
         public class PlayfabUtil01
@@ -55,7 +55,7 @@ namespace StupidTemplate.Patches.Internal
         [HarmonyPatch(typeof(PlayFabClientAPI), "UpdateUserTitleDisplayName")] // Credits to Shiny for letting me use this
         public class DisplayNamePatch
         {
-            public static string RandomString(int length = 4)
+            private static string RandomString(int length = 4)
             {
                 string random = "";
                 for (int i = 0; i < length; i++)

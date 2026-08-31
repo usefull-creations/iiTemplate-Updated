@@ -1,15 +1,35 @@
-﻿using BepInEx;
+﻿using System.ComponentModel;
+using BepInEx;
+using StupidTemplate.Classes;
+using StupidTemplate.Classes.Console;
+using StupidTemplate.Patches;
 
-namespace StupidTemplate
+namespace StupidTemplate;
+
+[Description(Constants.Description)]
+[BepInPlugin(
+        Constants.Guid,
+        Constants.Name,
+        Constants.Version)]
+public class Plugin : BaseUnityPlugin
 {
-    [System.ComponentModel.Description(PluginInfo.Description)]
-    [BepInPlugin(PluginInfo.GUID, PluginInfo.Name, PluginInfo.Version)]
-    public class HarmonyPatches : BaseUnityPlugin
+    private void Awake()
     {
-        private void Awake() =>
-            GorillaTagger.OnPlayerSpawned(OnPlayerSpawned);
+        Preferences.Load();
+        
+        gameObject.AddComponent<CoroutineManager>();
+        gameObject.AddComponent<HamburburData>();
 
-        public void OnPlayerSpawned() =>
-            Patches.PatchHandler.PatchAll();
+        GorillaTagger.OnPlayerSpawned(
+                OnPlayerSpawned);
+    }
+
+    private void OnApplicationQuit() => Preferences.Save();
+
+    private void OnPlayerSpawned()
+    {
+        PatchHandler.PatchAll();
+
+        Preferences.ApplyButtonStates();
     }
 }

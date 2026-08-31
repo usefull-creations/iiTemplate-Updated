@@ -1,25 +1,69 @@
+using Backtrace.Unity.Model;
+using GorillaNetworking;
 using HarmonyLib;
-using JetBrains.Annotations;
-using PlayFab.EventsModels;
+using Liv.Lck.Telemetry;
 
-namespace StupidTemplate.Patches.Internal
+namespace StupidTemplate.Patches.Internal;
+
+public static class TelemetryPatches
 {
-    public class TelemetryPatches
+    [HarmonyPatch(typeof(GorillaTelemetry), nameof(GorillaTelemetry.EnqueueTelemetryEvent))]
+    private static class GorillaTelemetryEnqueuePatch
     {
-        public static bool enabled = true;
+        private static bool Prefix() =>
+                false;
+    }
 
-        [HarmonyPatch(typeof(GorillaTelemetry), "EnqueueTelemetryEvent")]
-        public class TelemetryPatch1
-        {
-            private static bool Prefix(string eventName, object content, [CanBeNull] string[] customTags = null) =>
-                !enabled;
-        }
+    [HarmonyPatch(typeof(GorillaTelemetry), nameof(GorillaTelemetry.EnqueueZoneEvent))]
+    private static class GorillaTelemetryZonePatch
+    {
+        private static bool Prefix() =>
+                false;
+    }
 
-        [HarmonyPatch(typeof(GorillaTelemetry), "EnqueueTelemetryEventPlayFab")]
-        public class TelemetryPatch2
+    [HarmonyPatch(typeof(GorillaTelemetry), nameof(GorillaTelemetry.FlushMothershipTelemetry))]
+    private static class GorillaTelemetryFlushPatch
+    {
+        private static bool Prefix() =>
+                false;
+    }
+
+    [HarmonyPatch(typeof(Gorillanalytics), nameof(Gorillanalytics.UploadGorillanalytics))]
+    private static class GorillanalyticsUploadPatch
+    {
+        private static bool Prefix() =>
+                false;
+    }
+
+    [HarmonyPatch(typeof(GorillaServer), nameof(GorillaServer.UploadGorillanalytics))]
+    private static class GorillaServerGorillanalyticsPatch
+    {
+        private static bool Prefix() =>
+                false;
+    }
+
+    [HarmonyPatch(typeof(CustomMapTelemetry), nameof(CustomMapTelemetry.StartMapTracking))]
+    private static class CustomMapTelemetryStartPatch
+    {
+        private static bool Prefix() =>
+                false;
+    }
+
+    //This disables unity's crash analytics telemetry
+    [HarmonyPatch(typeof(BacktraceManager), "<Awake>b__1_0")]
+    private static class BacktraceBeforeSendPatch
+    {
+        private static bool Prefix(ref BacktraceData __result)
         {
-            private static bool Prefix(EventContents eventContent) =>
-                !enabled;
+            __result = null;
+            return false;
         }
+    }
+
+    [HarmonyPatch(typeof(LckTelemetryClient), nameof(LckTelemetryClient.SendTelemetry))]
+    private static class LckTelemetryPatch
+    {
+        private static bool Prefix() =>
+                false;
     }
 }

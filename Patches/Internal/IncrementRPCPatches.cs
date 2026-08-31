@@ -3,7 +3,7 @@ using Photon.Pun;
 
 namespace StupidTemplate.Patches.Internal
 {
-    public class IncrementRPCPatches
+    public abstract class IncrementRPCPatches
     {
         [HarmonyPatch(typeof(VRRig), "IncrementRPC", typeof(PhotonMessageInfoWrapped), typeof(string))]
         public class NoIncrementRPC

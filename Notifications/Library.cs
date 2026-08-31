@@ -1,164 +1,177 @@
-﻿using BepInEx;
-using System;
+﻿using System;
 using System.Linq;
+using BepInEx;
+using GorillaLocomotion;
 using UnityEngine;
 using UnityEngine.UI;
-using static StupidTemplate.Settings;
+using static StupidTemplate.Menu.Settings;
 
-namespace StupidTemplate.Notifications
+namespace StupidTemplate.Notifications;
+
+[BepInPlugin("org.gorillatag.lars.notifications2", "NotificationLibrary", "1.0.5")]
+public class NotifiLib : BaseUnityPlugin
 {
-    [BepInPlugin("org.gorillatag.lars.notifications2", "NotificationLibrary", "1.0.5")]
-    public class NotifiLib : BaseUnityPlugin
+
+    public static int NoticationThreshold = 30;
+
+    public static string PreviousNotification;
+
+    private static Text notificationText;
+
+    public static bool IsEnabled = true;
+
+    private readonly Material alertText = new(Shader.Find("GUI/Text Shader"));
+
+    private readonly int notificationDecayTime = 144;
+
+    private bool hasInit;
+
+    private GameObject hudObj;
+
+    private GameObject hudObj2;
+
+    private GameObject mainCamera;
+
+    private string newtext;
+
+    private int notificationDecayTimeCounter;
+
+    private string[] notifilines;
+
+    private Text testtext;
+    private void Awake() => Logger.LogInfo("Plugin NotificationLibrary is loaded!");
+
+    private void LateUpdate()
     {
-        private void Awake()
+        if (!hasInit)
         {
-            Logger.LogInfo("Plugin NotificationLibrary is loaded!");
+            if (GTPlayer.Instance?.mainCamera == null)
+                return;
+
+            Init();
+
+            hasInit = true;
         }
 
-        private void Init()
+        if (hudObj2    == null ||
+            mainCamera == null ||
+            testtext   == null)
         {
-            this.MainCamera = GameObject.Find("Main Camera");
-            this.HUDObj = new GameObject();
-            this.HUDObj2 = new GameObject();
-            this.HUDObj2.name = "NOTIFICATIONLIB_HUD_OBJ";
-            this.HUDObj.name = "NOTIFICATIONLIB_HUD_OBJ";
-            this.HUDObj.AddComponent<Canvas>();
-            this.HUDObj.AddComponent<CanvasScaler>();
-            this.HUDObj.AddComponent<GraphicRaycaster>();
-            this.HUDObj.GetComponent<Canvas>().enabled = true;
-            this.HUDObj.GetComponent<Canvas>().renderMode = RenderMode.WorldSpace;
-            this.HUDObj.GetComponent<Canvas>().worldCamera = this.MainCamera.GetComponent<Camera>();
-            this.HUDObj.GetComponent<RectTransform>().sizeDelta = new Vector2(5f, 5f);
-            this.HUDObj.GetComponent<RectTransform>().position = new Vector3(this.MainCamera.transform.position.x, this.MainCamera.transform.position.y, this.MainCamera.transform.position.z);
-            this.HUDObj2.transform.position = new Vector3(this.MainCamera.transform.position.x, this.MainCamera.transform.position.y, this.MainCamera.transform.position.z - 4.6f);
-            this.HUDObj.transform.parent = this.HUDObj2.transform;
-            this.HUDObj.GetComponent<RectTransform>().localPosition = new Vector3(0f, 0f, 1.6f);
-            Vector3 eulerAngles = this.HUDObj.GetComponent<RectTransform>().rotation.eulerAngles;
-            eulerAngles.y = -270f;
-            this.HUDObj.transform.localScale = new Vector3(1f, 1f, 1f);
-            this.HUDObj.GetComponent<RectTransform>().rotation = Quaternion.Euler(eulerAngles);
-            this.Testtext = new GameObject
-            {
+            return;
+        }
+
+        hudObj2.transform.position =
+                mainCamera.transform.position;
+
+        hudObj2.transform.rotation =
+                mainCamera.transform.rotation;
+
+        if (string.IsNullOrEmpty(testtext.text))
+        {
+            notificationDecayTimeCounter = 0;
+
+            return;
+        }
+
+        notificationDecayTimeCounter++;
+
+        if (notificationDecayTimeCounter <= notificationDecayTime)
+            return;
+
+        notifilines                  = null;
+        newtext                      = "";
+        notificationDecayTimeCounter = 0;
+
+        notifilines =
+                testtext.text
+                        .Split(Environment.NewLine.ToCharArray())
+                        .Skip(1)
+                        .ToArray();
+
+        foreach (string text in notifilines)
+        {
+            if (!string.IsNullOrEmpty(text))
+                newtext += text + "\n";
+        }
+
+        testtext.text = newtext;
+    }
+
+    private void Init()
+    {
+        mainCamera   = GTPlayer.Instance.mainCamera.gameObject;
+        hudObj       = new GameObject();
+        hudObj2      = new GameObject();
+        hudObj2.name = "NOTIFICATIONLIB_HUD_OBJ";
+        hudObj.name  = "NOTIFICATIONLIB_HUD_OBJ";
+        hudObj.AddComponent<Canvas>();
+        hudObj.AddComponent<CanvasScaler>();
+        hudObj.AddComponent<GraphicRaycaster>();
+        hudObj.GetComponent<Canvas>().enabled                    = true;
+        hudObj.GetComponent<Canvas>().renderMode                 = RenderMode.WorldSpace;
+        hudObj.GetComponent<Canvas>().worldCamera                = mainCamera.GetComponent<Camera>();
+        hudObj.GetComponent<RectTransform>().sizeDelta           = new Vector2(5f, 5f);
+        hudObj.GetComponent<RectTransform>().position            = new Vector3(mainCamera.transform.position.x, mainCamera.transform.position.y, mainCamera.transform.position.z);
+        hudObj.GetComponent<CanvasScaler>().dynamicPixelsPerUnit = 10f;
+        hudObj2.transform.position                               = new Vector3(mainCamera.transform.position.x, mainCamera.transform.position.y, mainCamera.transform.position.z - 4.6f);
+        hudObj.transform.parent                                  = hudObj2.transform;
+        hudObj.GetComponent<RectTransform>().localPosition       = new Vector3(0f, 0f, 1.6f);
+        Vector3 eulerAngles = hudObj.GetComponent<RectTransform>().rotation.eulerAngles;
+        eulerAngles.y                                 = -270f;
+        hudObj.transform.localScale                   = new Vector3(1f, 1f, 1f);
+        hudObj.GetComponent<RectTransform>().rotation = Quaternion.Euler(eulerAngles);
+        testtext = new GameObject
+        {
                 transform =
                 {
-                    parent = this.HUDObj.transform
-                }
-            }.AddComponent<Text>();
-            this.Testtext.text = "";
-            this.Testtext.fontSize = 30;
-            this.Testtext.font = currentFont;
-            this.Testtext.rectTransform.sizeDelta = new Vector2(450f, 210f);
-            this.Testtext.alignment = TextAnchor.LowerLeft;
-            this.Testtext.rectTransform.localScale = new Vector3(0.00333333333f, 0.00333333333f, 0.33333333f);
-            this.Testtext.rectTransform.localPosition = new Vector3(-1f, -1f, -0.5f);
-            this.Testtext.material = this.AlertText;
-            NotifiText = this.Testtext;
-        }
+                        parent = hudObj.transform,
+                },
+        }.AddComponent<Text>();
 
-        private void FixedUpdate()
+        testtext.text                        = "";
+        testtext.fontSize                    = 30;
+        testtext.font                        = currentFont;
+        testtext.rectTransform.sizeDelta     = new Vector2(450f, 210f);
+        testtext.alignment                   = TextAnchor.LowerLeft;
+        testtext.rectTransform.localScale    = new Vector3(0.00333333333f, 0.00333333333f, 0.33333333f);
+        testtext.rectTransform.localPosition = new Vector3(-1f,            -1f,            -0.5f);
+        testtext.material                    = alertText;
+        notificationText                     = testtext;
+    }
+
+    public static void SendNotification(string notificationText)
+    {
+        if (!disableNotifications)
         {
-            bool flag = !this.HasInit && GameObject.Find("Main Camera") != null;
-            if (flag)
+            try
             {
-                this.Init();
-                this.HasInit = true;
-            }
-            this.HUDObj2.transform.position = new Vector3(this.MainCamera.transform.position.x, this.MainCamera.transform.position.y, this.MainCamera.transform.position.z);
-            this.HUDObj2.transform.rotation = this.MainCamera.transform.rotation;
-            if (this.Testtext.text != "")
-            {
-                this.NotificationDecayTimeCounter++;
-                if (this.NotificationDecayTimeCounter > this.NotificationDecayTime)
+                if (IsEnabled && PreviousNotification != notificationText)
                 {
-                    this.Notifilines = null;
-                    this.newtext = "";
-                    this.NotificationDecayTimeCounter = 0;
-                    this.Notifilines = Enumerable.ToArray(Enumerable.Skip(this.Testtext.text.Split(Environment.NewLine.ToCharArray()), 1));
-                    foreach (string text in this.Notifilines)
+                    if (!notificationText.Contains(Environment.NewLine))
                     {
-                        if (text != "")
-                        {
-                            this.newtext = this.newtext + text + "\n";
-                        }
+                        notificationText += Environment.NewLine;
                     }
-                    this.Testtext.text = this.newtext;
+
+                    NotifiLib.notificationText.text            += notificationText;
+                    NotifiLib.notificationText.supportRichText =  true;
+                    PreviousNotification                       =  notificationText;
                 }
             }
-            else
+            catch
             {
-                this.NotificationDecayTimeCounter = 0;
+                Debug.LogError("Notification failed, object probably nil due to third person ; " + notificationText);
             }
         }
+    }
 
-        public static void SendNotification(string NotificationText)
-        {
-            if (!disableNotifications)
-            {
-                try
-                {
-                    if (IsEnabled && PreviousNotifi != NotificationText)
-                    {
-                        if (!NotificationText.Contains(Environment.NewLine))
-                        {
-                            NotificationText += Environment.NewLine;
-                        }
-                        NotifiText.text = NotifiText.text + NotificationText;
-                        NotifiText.supportRichText = true;
-                        PreviousNotifi = NotificationText;
-                    }
-                }
-                catch
-                {
-                    Debug.LogError("Notification failed, object probably nil due to third person ; " + NotificationText);
-                }
-            }
-        }
-
-        public static void ClearAllNotifications()
-        {
+    public static void ClearAllNotifications() =>
             //NotifiLib.NotifiText.text = "<color=grey>[</color><color=green>SUCCESS</color><color=grey>]</color> <color=white>Notifications cleared.</color>" + Environment.NewLine;
-            NotifiText.text = "";
-        }
+            notificationText.text = "";
 
-        public static void ClearPastNotifications(int amount)
-        {
-            string text = "";
-            foreach (string text2 in Enumerable.ToArray(Enumerable.Skip(NotifiText.text.Split(Environment.NewLine.ToCharArray()), amount)))
-            {
-                if (text2 != "")
-                {
-                    text = text + text2 + "\n";
-                }
-            }
-            NotifiText.text = text;
-        }
+    public static void ClearPastNotifications(int amount)
+    {
+        string text = notificationText.text.Split(Environment.NewLine.ToCharArray()).Skip(amount).ToArray().Where(text2 => text2 != "").Aggregate("", (current, text2) => current + text2 + "\n");
 
-        private GameObject HUDObj;
-
-        private GameObject HUDObj2;
-
-        private GameObject MainCamera;
-
-        private Text Testtext;
-
-        private Material AlertText = new Material(Shader.Find("GUI/Text Shader"));
-
-        private int NotificationDecayTime = 144;
-
-        private int NotificationDecayTimeCounter;
-
-        public static int NoticationThreshold = 30;
-
-        private string[] Notifilines;
-
-        private string newtext;
-
-        public static string PreviousNotifi;
-
-        private bool HasInit;
-
-        private static Text NotifiText;
-
-        public static bool IsEnabled = true;
+        notificationText.text = text;
     }
 }

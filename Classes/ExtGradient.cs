@@ -1,27 +1,37 @@
-﻿using StupidTemplate.Menu;
-using System;
+﻿using System;
 using System.Linq;
+using StupidTemplate.Menu;
 using UnityEngine;
 
 namespace StupidTemplate.Classes
 {
     public class ExtGradient
     {
-        public static GradientColorKey[] GetSolidGradient(Color color) =>
-            new GradientColorKey[] { new GradientColorKey(color, 0f), new GradientColorKey(color, 1f) };
-
-        public static GradientColorKey[] GetSimpleGradient(Color a, Color b) =>
-            new GradientColorKey[] { new GradientColorKey(a, 0f), new GradientColorKey(b, 0.5f), new GradientColorKey(a, 1f) };
 
         public GradientColorKey[] colors = GetSolidGradient(Color.magenta);
+        public bool               copyRigColor;
+
+        public Func<Color> customColor;
+
+        public bool epileptic;
+        public bool pastelRainbow;
+
+        public bool rainbow;
+
+        public bool transparent;
+        public static GradientColorKey[] GetSolidGradient(Color color) =>
+                new[] { new GradientColorKey(color, 0f), new GradientColorKey(color, 1f), };
+
+        public static GradientColorKey[] GetSimpleGradient(Color a, Color b) =>
+                new[] { new GradientColorKey(a, 0f), new GradientColorKey(b, 0.5f), new GradientColorKey(a, 1f), };
 
         public Color GetColor(int index)
         {
             if (rainbow)
-                return Color.HSVToRGB((Time.time + (index / 8)) % 1f, 1f, 1f);
+                return Color.HSVToRGB((Time.time + index / 8) % 1f, 1f, 1f);
 
             if (pastelRainbow)
-                return Color.HSVToRGB((Time.time + (index / 8)), 0.3f, 1f);
+                return Color.HSVToRGB(Time.time + index / 8, 0.3f, 1f);
 
             if (epileptic)
                 return Main.RandomColor();
@@ -45,10 +55,10 @@ namespace StupidTemplate.Classes
 
         public void SetColor(int index, Color color, bool setMirror = true)
         {
-            rainbow = false;
+            rainbow       = false;
             pastelRainbow = false;
 
-            epileptic = false;
+            epileptic    = false;
             copyRigColor = false;
 
             customColor = null;
@@ -58,7 +68,7 @@ namespace StupidTemplate.Classes
 
             if (setMirror && index == 0)
             {
-                colors[0].color = color;
+                colors[0].color  = color;
                 colors[^1].color = color;
             }
             else
@@ -67,10 +77,10 @@ namespace StupidTemplate.Classes
 
         public void SetColors(Color color)
         {
-            rainbow = false;
+            rainbow       = false;
             pastelRainbow = false;
 
-            epileptic = false;
+            epileptic    = false;
             copyRigColor = false;
 
             customColor = null;
@@ -95,7 +105,7 @@ namespace StupidTemplate.Classes
 
             if (transparent)
             {
-                Color targetColor = new Gradient { colorKeys = colors }.Evaluate(time);
+                Color targetColor = new Gradient { colorKeys = colors, }.Evaluate(time);
                 targetColor.a = 0f;
 
                 return targetColor;
@@ -104,37 +114,25 @@ namespace StupidTemplate.Classes
             if (customColor != null)
                 return customColor?.Invoke() ?? Color.magenta;
 
-            return new Gradient { colorKeys = colors }.Evaluate(time);
+            return new Gradient { colorKeys = colors, }.Evaluate(time);
         }
 
         public Color GetCurrentColor(float offset = 0f) =>
-            GetColorTime((offset + (Time.time * Settings.gradientSpeed)) % 1f);
+                GetColorTime((offset + Time.time * Settings.gradientSpeed) % 1f);
 
         public bool IsFlat() =>
-            !rainbow && !pastelRainbow && !epileptic && !copyRigColor &&
-            colors.Length > 0 && colors.All(key => key.color == colors[0].color);
+                !rainbow          && !pastelRainbow && !epileptic && !copyRigColor &&
+                colors.Length > 0 && colors.All(key => key.color == colors[0].color);
 
-        public ExtGradient Clone()
-        {
-            return new ExtGradient
-            {
-                rainbow = rainbow,
-                pastelRainbow = pastelRainbow,
-                epileptic = epileptic,
-                copyRigColor = copyRigColor,
-                customColor = customColor,
-                colors = colors.Select(c => new GradientColorKey(c.color, c.time)).ToArray()
-            };
-        }
-
-        public bool rainbow;
-        public bool pastelRainbow;
-
-        public bool epileptic;
-        public bool copyRigColor;
-
-        public bool transparent;
-
-        public Func<Color> customColor;
+        public ExtGradient Clone() =>
+                new()
+                {
+                        rainbow       = rainbow,
+                        pastelRainbow = pastelRainbow,
+                        epileptic     = epileptic,
+                        copyRigColor  = copyRigColor,
+                        customColor   = customColor,
+                        colors        = colors.Select(c => new GradientColorKey(c.color, c.time)).ToArray(),
+                };
     }
 }

@@ -2,6 +2,7 @@
 
   <PropertyGroup>
 	  <TargetFramework>netstandard2.1</TargetFramework>
+	  <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -106,7 +107,7 @@
     <Reference Include="KID">
       <HintPath>$(GameAssemblyPath)\KID.dll</HintPath>
     </Reference>
-    <Reference Include="LIV.LCK">
+    <Reference Include="LIV.LCK" Publicize="True">
       <HintPath>$(GameAssemblyPath)\LIV.LCK.dll</HintPath>
     </Reference>
     <Reference Include="LIV.LCK_GorillaTag">
@@ -550,5 +551,10 @@
     <Reference Include="ZString">
       <HintPath>$(GameAssemblyPath)\ZString.dll</HintPath>
     </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Assets\cone.png" />
+    <EmbeddedResource Include="Assets\watermark.png" />
   </ItemGroup>
 </Project>
